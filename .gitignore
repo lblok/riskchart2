@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+connect_postgres.R
+socratacredentials.R
+censuskey.R
