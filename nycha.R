@@ -48,14 +48,14 @@ filter(cd %in% c("2NA", "3NA"))
 # MORRISANIA AIR RIGHTS	204
 # WEST FARMS ROAD REHAB	202
 
-nychadev19$cd_adj <- nychadev19$cd
-nychadev19$cd_adj[nychadev19$development=='KINGSBOROUGH'] <- '308'
-nychadev19$cd_adj[nychadev19$development=='MORRISANIA AIR RIGHTS'] <- '204'
-nychadev19$cd_adj[nychadev19$development=='WEST FARMS ROAD REHAB'] <- '202'
+nychadev19$cd_fix <- nychadev19$cd
+nychadev19$cd_fix[nychadev19$development=='KINGSBOROUGH'] <- '308'
+nychadev19$cd_fix[nychadev19$development=='MORRISANIA AIR RIGHTS'] <- '204'
+nychadev19$cd_fix[nychadev19$development=='WEST FARMS ROAD REHAB'] <- '202'
 
-nychaunits_cd_adj <- 
+nychaunits_cd_fix <- 
   nychadev19 %>% 
-  group_by(cd_adj) %>% 
+  group_by(cd_fix) %>% 
   dplyr::summarise(units=sum(number_of_current_apartments))
 
 # File sent directly by Maxwell Austensen. Based on work here: https://github.com/austensen/nycha-outages 
@@ -64,18 +64,10 @@ nychaoutages <- read_csv('../NYCHA/history_all.csv')
 min(nychaoutages$report_date)
 max(nychaoutages$report_date)
 
-require(lubridate)
-
-# check rough #s by dates, test program ran correctly
-nychaoutages_count <- 
-  nychaoutages %>% 
-  filter_time(nychaoutages, )
-  group_by(date(report_date)) %>% 
-  dplyr::summarise(count=n())
 
 # Tibbletime: https://cran.r-project.org/web/packages/tibbletime/vignettes/TT-01-time-based-filtering.html
 install.packages("tibbletime")
-library(tibbletime)
+require(tibbletime)
 
 # order by report_date
 nychaoutages <- nychaoutages[order(nychaoutages$report_date),] 
@@ -88,19 +80,23 @@ nychaoutages_12mos <- filter_time(nychaoutages, '2020-04-01' ~ '2021-03-31') %>%
  filter(planned == 'Unplanned')
 
 nychaoutages_12mos <- left_join(nychaoutages_12mos, 
-          nychadev19 %>% select(development, cd_adj),
+          nychadev19 %>% select(development, cd_fix),
                                 by = c("development_name" = "development"),
                                 keep = FALSE,
                                 copy = FALSE)
 
 nychaoutages_bycd <- 
   nychaoutages_12mos %>% 
-  group_by(cd_adj) %>% 
+  group_by(cd_fix) %>% 
   dplyr::summarise(count=n()) %>%
   left_join (.,
-             nychaunits_cd_adj,
-             by = "cd_adj") 
+             nychaunits_cd_fix,
+             by = "cd_fix") %>%
+  left_join (.,
+             cdsnyc,
+             by = c("cd_fix" = "cd_lu"),
+             keep = FALSE)
 
-nychaoutages_bycd$outagerate <- nychaoutages_bycd$count*100 / nychaoutages_bycd$units
+nychaoutages_bycd$outagerate <- nychaoutages_bycd$count*1000 / nychaoutages_bycd$units
 
 

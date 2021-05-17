@@ -4,37 +4,43 @@ cdsnyc <- read_csv('../PUMA CD crosswalk.csv',
                         cd_lu = col_character(),
                         cd_adj = col_character()))
 ## From covid.R
-# COVID Case Rates
+# COVID Case Rates - checked
 covid_caserate_columns <- covid %>%
 select(cd_adj, caserate)
 
-# COVID Death Rates
+# COVID Death Rates - checked
 covid_deathrate_columns <- covid %>%
   select(cd_adj, deathrate)
 
 ## From acs.R
-# Percent Service Workers
+
+# Percent uninsured - 5 year
+uninsured_columns <- nohinyc %>%
+  select(cd_adj, pctnohi) %>%
+  arrange(cd_adj)
+
+# Percent Service Workers - 1 year
 serviceworkers_columns <- serviceworkers %>%
   select(cd_adj, pctsvc) %>%
   arrange(cd_adj)
 
-# Overcrowded 
+# Overcrowded - 5 year
 overcrowding_columns <- overcrowding19nyc %>%
   select(cd_adj, pctsevere) %>%
   arrange(cd_adj)
 
-# Percent POC
+# Percent POC - 1 year
 poc_columns <- poc19nyc %>%
   select(cd_adj, pctpoc) %>%
   arrange(cd_adj)
 
-# Rent burdem
+# Rent burden - 1 year
 rentburden_columns <- rentburden19nyc %>%
   select(cd_adj, pctrentburden) %>%
   arrange(cd_adj)
 
-# AMI
-ami_columns <- ami19 %>%
+# AMI - 1 year, 2019 income, HH size, and HUD limits. Checked and corrected (wasn't household). 
+ami_columns <- ami_hh19 %>%
   select(cd_adj, proratedami) %>%
   arrange(cd_adj)
 
@@ -90,13 +96,14 @@ nonbank_columns <- nonbank %>%
   select(cd_adj, PctNonBank) %>%
   arrange(cd_adj)  
 
-
-
 ### Joined table
 
 joined_columns <- covid_caserate_columns %>%
   left_join(.,
             covid_deathrate_columns,
+            by = "cd_adj") %>%
+  left_join(.,
+            uninsured_columns,
             by = "cd_adj") %>%
   left_join(.,
             serviceworkers_columns,
@@ -123,7 +130,7 @@ joined_columns <- covid_caserate_columns %>%
             violations_columns,
             by = "cd_adj") %>%
   left_join(.,
-            sales_columns,
+            sales_columns %>% select(cd_adj, change),
             by = "cd_adj") %>%
   left_join(.,
             coo_columns,
@@ -149,7 +156,7 @@ joined_columns <- covid_caserate_columns %>%
   distinct()
   
   
-  write_csv(joined_columns, 'joined_columns.csv')
+  write_csv(joined_columns, 'joined_columns4.csv')
   
   
   

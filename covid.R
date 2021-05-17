@@ -56,12 +56,39 @@ covid$deaths_adj[covid$puma=='3705'] <- sum(covid$confirmed_and_probable_deaths[
 covid$deaths_adj[covid$puma=='3710'] <- sum(covid$confirmed_and_probable_deaths[covid$puma=='3710'])
 covid$deaths_adj[covid$puma=='3807'] <- sum(covid$confirmed_and_probable_deaths[covid$puma=='3807'])
 
-covid$caserate <- covid$cases_adj*1000/covid$estimate
-covid$deathrate <- covid$deaths_adj*1000/covid$estimate
+covid$caserate2 <- covid$cases_adj*100000/covid$estimate
+covid$deathrate2 <- covid$deaths_adj*100000/covid$estimate
 
 
 covid <- covid[order(covid$cd_adj),]
 
 
+# testing covid death rates, which seem out of alignment with DOHMH's dashboard
+
+data_by_modzcta_deaths <- read_csv('../COVID/data-by-modzcta_210514.csv') %>%
+  select(MODIFIED_ZCTA,NEIGHBORHOOD_NAME,COVID_DEATH_COUNT,POP_DENOMINATOR,COVID_DEATH_RATE) %>%
+  view()
+
+covid_deaths <- covid %>% select(community_district,cd_adj,confirmed_and_probable_deaths,estimate,deathrate2) %>%
+  view()
+
+sum(covid$confirmed_and_probable_deaths)
+sum(data_by_modzcta$COVID_DEATH_COUNT)
+sum(covid$estimate)
+sum(data_by_modzcta$POP_DENOMINATOR)    
+    
+sum(covid$confirmed_and_probable_deaths) /  sum(covid$estimate)
+sum(data_by_modzcta$COVID_DEATH_COUNT) / sum(data_by_modzcta$POP_DENOMINATOR)    
+
+sum(covid$confirmed_and_probable_cases)
+sum(data_by_modzcta$COVID_CASE_COUNT)
+
+sum(covid$confirmed_and_probable_cases) /  sum(covid$estimate)
+sum(data_by_modzcta$COVID_CASE_COUNT) / sum(data_by_modzcta$POP_DENOMINATOR)   
+
+# conclusion - numbers by CD look ballpark similar to current numbers by mod ZCTA. DOHMH uses significantly lower population estimates than ACS data, which makes the death rates higher. So our estimates are conservative.
+# where as total cases are higher in CD data versus ZCTA data (856914 v 746901), total deaths are lower (24660 v 27415)
 
 
+
+    

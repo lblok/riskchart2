@@ -20,19 +20,20 @@ v19_1 <- load_variables(2019, "acs1", cache = TRUE)
 
 # Median income
 
-# B06011_001	Estimate!!Median income in the past 12 months --!!Total:
-# Get NYS puma data for median income
-income19 <- get_acs(geography = "public use microdata area", 
-                         variables = "B06011_001", 
-                         state =  "New York",
-                         survey = "acs1",
-                         year = 2019)
+# Had originally used wrong income column, B06011_001, - likely individual income rather than household
+# B19013_001	Estimate!!Median household income in the past 12 months (in 2019 inflation-adjusted dollars)
+hhincome19 <- get_acs(geography = "public use microdata area", 
+                      variables = "B19013_001", 
+                      state =  "New York",
+                      survey = "acs1",
+                      year = 2019)
+
 
 # substring for new puma field of 4 digits for joins
-income19$puma <-  substr(income19$GEOID,4,8) # New column of 4 digit puma codes
+hhincome19$puma <-  substr(hhincome19$GEOID,4,8) # New column of 4 digit puma codes
 
 # Filter Income by NYS PUMA data for just NYC
-income19nyc <- inner_join(income19, cdsnyc, 
+hhincome19nyc <- inner_join(hhincome19, cdsnyc, 
                           by = "puma")
 
 
@@ -53,9 +54,9 @@ hhsize19nyc <- inner_join(hhsize19, cdsnyc,
                           by = "puma")
 
 # New table of name, puma, median HH income, and average household size
-ami19 <- left_join (
-        income19nyc %>% dplyr::select(puma,NAME,estimate,moe),
-        hhsize19nyc %>% dplyr::select(puma,estimate,moe),
+ami_hh19 <- left_join (
+        hhincome19nyc %>% dplyr::select(puma,NAME,estimate,moe),
+        hhsize19nyc %>% dplyr::select(puma,estimate,moe, cds_adj),
         by = "puma"
         ) %>%
 
@@ -71,13 +72,11 @@ distinct()
 
 # Calculate pro-rated AMI based on household size
 
-ami19$proratedami <- (ami19$medinc_e*100/(106700-((0.1*106700)*(4-ami19$avgsize_e))))
+ami_hh19$proratedami <- (ami_hh19$medinc_e/(106700-((0.1*106700)*(4-ami_hh19$avgsize_e))))
 
-view(ami19)
-
-ami19 <- ami19 %>%
-  left_join(., cdsnyc, 
-  by = "puma")
+ami_hh19 <- ami_hh19 %>% left_join(.,
+                       cdsnyc,
+                       by = "puma")
 
 
 # Pct service workers
@@ -125,11 +124,12 @@ serviceworkers$S2406_C01_006E <- as.numeric(serviceworkers$S2406_C01_006E)
 serviceworkers$S2406_C01_006M <- as.numeric(serviceworkers$S2406_C01_006M)
 
 # calculate % service + production/transport workers out of total
-serviceworkers$pctsvc <-  (serviceworkers$S2406_C01_003E*100 + serviceworkers$S2406_C01_006E)/serviceworkers$S2406_C01_001E
+serviceworkers$pctsvc <-  (serviceworkers$S2406_C01_003E + serviceworkers$S2406_C01_006E)/serviceworkers$S2406_C01_001E
   
 serviceworkers <- serviceworkers %>%
-  left_join(., cdsnyc,
-            by = "puma")
+  inner_join(., cdsnyc,
+            by = "puma") %>%
+  distinct()
 
 
 #Overcrowding
@@ -214,18 +214,15 @@ overcrowding19 <-
 overcrowding19$puma <-  substr(overcrowding19$GEOID,4,8) # New column of 4 digit puma codes
 
 # Filter Income by NYS PUMA data for just NYC
-overcrowding19nyc <- inner_join(overcrowding19, cdsnyc, 
-                                by = "puma")
+  overcrowding19nyc <- inner_join(overcrowding19, cdsnyc, 
+                                  by = "puma")
 
 # Calculate severe overcrowding as owners and renters with 1.5+ occupants per room out of total 
-overcrowding19nyc$pctsevere <- (overcrowding19nyc$owner15_20_e + overcrowding19nyc$owner20plus_e + overcrowding19nyc$renter15_20_e + overcrowding19nyc$renter20plus_e)*100 / overcrowding19nyc$total_e
+overcrowding19nyc$pctsevere <- (overcrowding19nyc$owner15_20_e + overcrowding19nyc$owner20plus_e + overcrowding19nyc$renter15_20_e + overcrowding19nyc$renter20plus_e) / overcrowding19nyc$total_e
 
 view(overcrowding19nyc)
 
-overcrowding19nyc <- overcrowding19nyc %>%
-  left_join(.,
-            cdsnyc,
-            by = "puma")
+
 
 # RACE
 # Calculated as everybody minus anyone who identifies as white alone
@@ -262,14 +259,15 @@ poc19$puma <-  substr(poc19$GEOID,4,8) # New column of 4 digit puma codes
 
 # Filter NYS PUMA data for just NYC
 poc19nyc <- inner_join(poc19, cdsnyc, 
-                                by = "puma") %>%
+                                by = "puma") 
 
-rename(total_e = 3,
+poc19nyc <-  poc19nyc %>%
+dplyr::rename(total_e = 3,
        total_m = 4,
        whitealone_e = 5,
        whitealone_m = 6) 
 
-poc19nyc$pctpoc <- (poc19nyc$total_e-poc19nyc$whitealone_e)*100/poc19nyc$total_e
+poc19nyc$pctpoc <- (poc19nyc$total_e-poc19nyc$whitealone_e)/poc19nyc$total_e
 
 
 # Rent burden
@@ -376,8 +374,88 @@ rename(total_e = 3,
 )
 
 rentburden19nyc$pctrentburden <- 
-  (rentburden19nyc$rent30_35_e + rentburden19nyc$rent35_40_e + rentburden19nyc$rent40_50_e + rentburden19nyc$rent50plus_e)*100/
+  (rentburden19nyc$rent30_35_e + rentburden19nyc$rent35_40_e + rentburden19nyc$rent40_50_e + rentburden19nyc$rent50plus_e)/
   (rentburden19nyc$total_e - rentburden19nyc$rentnotcomputed_e)
 
+
+
+# Health insurance
+# B27020_001	Estimate!!Total:
+# B27020_006	Estimate!!Total:!!Native Born:!!No health insurance coverage
+# B27020_012	Estimate!!Total:!!Foreign Born:!!Naturalized:!!No health insurance co
+# B27020_017	Estimate!!Total:!!Foreign Born:!!Noncitizen:!!No health insurance co
+
+
+
+
+# grab variables for all of NYS
+totalpop <- get_acs(geography = "public use microdata area", 
+                    variables = "B27020_001", 
+                    state =  "New York",
+                    year = 2019,
+                    survey = "acs5")
+
+nativenohi <- get_acs(geography = "public use microdata area", 
+                     variables = "B27020_006", 
+                     state =  "New York",
+                     year = 2019,
+                     survey = "acs5")
+
+naturalizednohi <- get_acs(geography = "public use microdata area", 
+                     variables = "B27020_012", 
+                     state =  "New York",
+                     year = 2019,
+                     survey = "acs5")
+
+noncitizennohi <- get_acs(geography = "public use microdata area", 
+                     variables = "B27020_017", 
+                     state =  "New York",
+                     year = 2019,
+                     survey = "acs5")
+
+
+
+# join all variables
+
+nohi <- 
+  
+  left_join(totalpop %>% dplyr::select(GEOID, NAME, estimate, moe), 
+            nativenohi %>% dplyr::select(GEOID, estimate, moe),
+            by = "GEOID",
+            keep = FALSE,
+            copy = FALSE
+  ) %>%
+  left_join (. , 
+             naturalizednohi %>% dplyr::select(GEOID, estimate, moe),
+             by = "GEOID",
+             keep = FALSE,
+             copy = FALSE
+  ) %>%
+  left_join (. , 
+             noncitizennohi %>% dplyr::select(GEOID, estimate, moe),
+             by = "GEOID",
+             keep = FALSE,
+             copy = FALSE
+  ) 
+
+# substring for new puma field of 4 digits for joins
+nohi$puma <-  substr(nohi$GEOID,4,8) # New column of 4 digit puma codes
+
+# Filter Income by NYS PUMA data for just NYC
+nohinyc <- inner_join(nohi, cdsnyc, 
+                              by = "puma") %>%
+  
+  rename(total_e = 3,
+         total_m = 4,
+         nativenohi_e = 5,
+         nativenohi_m = 6,
+         naturalizednohi_e = 7,
+         naturalizednohi_m = 8,
+         noncitizennohi_e = 9,
+         noncitizennohi_m = 10
+  )
+
+nohinyc$pctnohi <- (nohinyc$nativenohi_e + nohinyc$naturalizednohi_e + nohinyc$noncitizennohi_e)/ nohinyc$total_e
+ 
 
 

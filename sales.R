@@ -75,18 +75,18 @@ ressales_grouped_ppgsf <-
 ressales_grouped <- 
   ressales18_20 %>% 
   group_by(cd,year) %>% 
-  summarize(num=n()) %>%
+  dplyr::summarize(num=n()) %>%
   pivot_wider(names_from = year, values_from = num) %>%
 left_join(.,
            ressales_grouped_ppgsf,
           by = 'cd',
           ) %>%
-  rename(num18 = 2,
+  dplyr::rename(num18 = 2,
          num20 = 3,
          ppgsf18 = 4,
          ppgsf20 = 5) 
   
-ressales_grouped$change <- (ressales_grouped$ppgsf20 - ressales_grouped$ppgsf18)*100/ressales_grouped$ppgsf18
+ressales_grouped$change <- (ressales_grouped$ppgsf20 - ressales_grouped$ppgsf18)/ressales_grouped$ppgsf18
   
 ressales_grouped$cd <- as.character(ressales_grouped$cd)
 
