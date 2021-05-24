@@ -4,6 +4,7 @@ library(tidycensus)
 library(readr)
 require(dplyr)
 
+
 # Import NYC puma codes
 PUMA_CD_crosswalk <- read_csv("~/Google Drive/ANHD/Risk Chart 2021/PUMA CD crosswalk.csv")
 pumanums <- as.character(PUMA_CD_crosswalk$PUMA)

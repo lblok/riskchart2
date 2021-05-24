@@ -1,8 +1,10 @@
+require(readr)
 cdsnyc <- read_csv('../PUMA CD crosswalk.csv',
                    col_names = TRUE,
                    cols(puma = col_character(),
                         cd_lu = col_character(),
                         cd_adj = col_character()))
+
 ## From covid.R
 # COVID Case Rates - checked
 covid_caserate_columns <- covid %>%
@@ -60,7 +62,7 @@ violations_columns <- cviols20_6plus_bycd %>%
   arrange(cd_adj)
 
 ## From sales.R
-sales_columns <- ressales_grouped %>%
+sales_columns <- sales_fixed %>%
   select(cd_adj, change) %>%
   arrange(cd_adj) 
 
@@ -82,7 +84,7 @@ rentstab_columns <- countrentstab %>%
   select(cd_adj, rsunits) %>%
   arrange(cd_adj)
 
-## From nycha.R
+## From nycha.R - checked CDs, not total outage numbers 
 nychaoutages_columns <- nychaoutages_bycd %>%
   select(cd_adj, outagerate)
 
@@ -156,7 +158,7 @@ joined_columns <- covid_caserate_columns %>%
   distinct()
   
   
-  write_csv(joined_columns, 'joined_columns4.csv')
+  write_csv(joined_columns, '~/Google\ Drive/ANHD/Risk\ Chart\ 2021/riskchart/joined_columns6.csv')
   
   
   

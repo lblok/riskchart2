@@ -59,7 +59,7 @@ nychaunits_cd_fix <-
   dplyr::summarise(units=sum(number_of_current_apartments))
 
 # File sent directly by Maxwell Austensen. Based on work here: https://github.com/austensen/nycha-outages 
-nychaoutages <- read_csv('../NYCHA/history_all.csv')
+nychaoutages <- read_csv('/Users/lucy/Google\ Drive/ANHD/Risk\ Chart\ 2021/NYCHA/history_all.csv')
 
 min(nychaoutages$report_date)
 max(nychaoutages$report_date)
@@ -98,5 +98,14 @@ nychaoutages_bycd <-
              keep = FALSE)
 
 nychaoutages_bycd$outagerate <- nychaoutages_bycd$count*1000 / nychaoutages_bycd$units
+
+# Check which developments have high numbers in the highest ranking district
+nychaoutages_12mos %>%
+  filter(cd_fix == '201') %>%
+  group_by(development_name) %>%
+  summarize(n()) %>%
+  view()
+
+
 
 

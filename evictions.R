@@ -25,7 +25,7 @@ require(RSocrata)
 # credentials in socratacredentials.R
 # import pluto21v1
 
-pluto21v1 <- read.socrata(
+pluto_21v1 <- read.socrata(
   "https://data.cityofnewyork.us/resource/64uk-42ks.csv",
   app_token = app_token,
   email     = email,
@@ -58,10 +58,6 @@ evictions20_bycd <- evictions20_cd %>%
   filter(residentialcommercialind == "RESIDENTIAL") %>%
   group_by(cd_adj) %>%
   dplyr::summarize(evictions=n()) %>%
-  inner_join(.,
-            cdsnyc,
-            by = "cd_adj",
-            keep = FALSE) %>% 
   left_join(.,
             population19nyc %>% dplyr::select(estimate,puma),
             by = "puma",
